@@ -1,0 +1,15 @@
+4.2
+- Sau khi biên dịch và chạy chương trình ta có:
++ BIKE_MODEL : .rodata
++ total_odometer : .bss
++ current_speed : stack
+4.3
+- Sau khi chạy hàm crack_simulation thì địa chỉ sẽ giảm dần do cơ chế của stack. Trong một tích tắc thì chương trình sẽ bị ngắt đột ngột do hàm đệ quy không có điều kiện để dừng thì stack pointer sẽ vượt quá giới hạn mà hệ điều hành cấp. Từ đó phân vùng bảo vệ sẽ can thiệp và sẽ tắt tiến trình đó để bảo vệ máy tính.
+- Còn đối với MCU như dòng ARM thì CPU sẽ không có hệ điều hành bảo vệ như máy tính nên sẽ bảo vệ bằng phần cứng. Khi lỗi Stack bị tràn thì CPU sẽ nhảy thẳng vào hàm ngắt của CPU. 
+
+
+
+Task 5:
+- Khi bộ nhớ Flash có bộ nhớ hạn chế thì nên chọn cách 1 để lưu lại lịch sử hành trình vì với cách 2 chứa mảng 3 phần tử sẽ chiếm rất dung lượng bộ nhớ Flash lớn. 
+- Với phân vùng .data ( uint16_t trip_history[20000] = {1, 2, 3} ), vì là mảng đã có giá trị trước ( tức có 1,2,3 và các số 0 khác trong mảng ) nên khi compile chương trình sẽ giữ nguyên cấu trúc này. Vì thế bộ nhớ Flash sẽ tốn 40KB để lưu các giá trị trên.
+- Với phân vùng .bss thì Linker chỉ lưu 2 thông tin là tổng kích thước cần cấp và địa chỉ bắt đầu trong RAM vì phân vùng này không chiếm vị trí khi lưu từng số 0 trong Flash.
