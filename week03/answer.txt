@@ -1,0 +1,43 @@
+Task 1:
+1.1:
++ Cmake: đọc các file dự án, kiểm tra môi trường và tạo các file cấu hình build.
++ Ninja : đọc file cấu hình từ Cmake, gọi Compiler để biên dịch chương trình.
++ Compiler (arm-none-eabi-gcc) : dịch mã nguồn thành mã máy, sau đó liên kết lại thành file cuối cùng.
++ STM32_Programmer_CLI: dùng để kết nối với ST-LINK nhằm nạp file nhị phân đã biên dịch lên MCU STM32.
+
+1.2:
+- Trình tự :
+Mã nguồn code C -> CMake -> build.ninja ->  Ninja ->  Compiler ->[.bin/.elf] -> (4) STM32_Programmer_CLI -> [MCU STM32]
+
+Task 2:
+2.1:
++ Vì khi đó file .o chưa biết địa chỉ vật lí của nhau trên MCU nên phải cần Linker.
++ Linker giúp định vị chính xác từng đoạn code, từng biến vào các vùng địa chỉ vật lí của Flash và RAM.
++ File .o (object file): dù chứa mã máy nhưng ở dạng địa chỉ tương đối và chứa nhiều thông tin phụ trợ nhưng chưa thể nạp trực tiếp lên MCU.
++ File .bin : chứa mã máy thuần túy và liên tục, chứa chính xác các byte mã máy được ánh xạ 1:1 vào đúng dải địa chỉ Flash của vi điều khiển. 
+  
+2.2:
+- Cơ chế hoạt động của Ninja:
++ Thông qua file build.ninja ( do CMake phân tích ), Ninja sẽ biết file .o nào được tạo ra từ file .c và .h nào.
++ Trước khi ra lệnh biên dịch, ninja sẽ quét nhanh qua các file sau đó sẽ so sánh thời gian sửa đổi cuối cùng của file nguồn và file sản phẩm 
++ Sau khi biên dịch các file thay đổi, Ninja gọi Linker tập hợp các file .o vừa mới cập nhật để xuất ra file .bin mới.
+
+Task 3:
+3.1:
++ LMA là địa chỉ nơi dữ liệu tạo của biến được lưu trữ vật lý khi nạp chương trình xuống chip.
++ Trong đoạn script, AT> FLASH chỉ định LMA nằm trong bộ nhớ FLASH. Vì RAM là bộ nhớ bốc hơi (volatile), khi mất điện dữ liệu sẽ biến mất, nên bắt buộc phải có một 1 bản sao cố định nằm ở FLASH. Nhãn _sedate=LOADADDR(.data) chính là cách lấy ra địa chỉ bắt đầu của bản sao lưu này trong FLASH.
++ VMA là địa chỉ nơi biến sẽ thực sự định cư và làm việc khi chương trình đang chạy.
++ Trong đoạn script, >RAM chỉ định VMA nằm trong RAM. Khi CPU thực hiện các lệnh đọc/ghi biến phải thao tác trên RAM vì bộ nhớ FLASH của STM32 không thể ghi trực tiếp theo cách thông thường trong lúc runtime. Nhãn _sdata và _edata đánh dấu vùng hiệu dụng này trong RAM.
+3.2:
+- Nếu hàm Reset_Handler quên thực hiện vòng lặp copy dữ liệu từ _sidata ( FLASH ) sang _sdata( RAM ) thì:
++ Sẽ làm sai lệch logic: Biến status mong muốn ban đầu là 0xAA, nhưng khi CPU đọc lên từ RAM, nó có thể là 0x00, 0xFF hoặc bất kỳ số nào. Hệ thống sẽ chạy sai logic ngay từ câu lệnh điều kiện đầu tiên, dẫn đến sập hệ thống hoặc HardFault. 
++ Sẽ chứa giá trị không xác định ( rác ),
+Task 4:
+4.1:
++ Câu lệnh :cmake -G Ninja -B build
+-G Ninja: Ép buộc CMake sử dụng Generator là Ninja để tạo ra file build.ninja.
+-B build: Chỉ định thư mục chứa toàn bộ sản phẩm trung gian và đầu ra tên là build (nếu thư mục chưa có, CMake sẽ tự tạo).
+
+4.2:
++ Câu lệnh: ninja -C build
+-C build: Yêu cầu Ninja di chuyển vào thư mục build để tìm file build.ninja và thực thi tiến trình build tại đó.
